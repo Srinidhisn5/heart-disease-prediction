@@ -28,17 +28,17 @@ st.markdown("---")
 
 
 # ============================================
-# 4. INPUT SECTION (USER-FRIENDLY)
+# 4. INPUT SECTION
 # ============================================
 
 col1, col2 = st.columns(2)
 
 with col1:
     age = st.number_input("Age", 1, 120, 30)
+
     sex = st.selectbox("Sex", ["Female", "Male"])
     sex = 0 if sex == "Female" else 1
 
-    # Chest Pain Type
     cp_dict = {
         "Typical Angina": 0,
         "Atypical Angina": 1,
@@ -58,7 +58,6 @@ with col1:
 
 
 with col2:
-    # ECG
     ecg_dict = {
         "Normal": 0,
         "ST-T Abnormality": 1,
@@ -74,7 +73,6 @@ with col2:
 
     st_depression = st.number_input("ST Depression", 0.0, 6.0, 1.0)
 
-    # ST Slope
     slope_dict = {
         "Upsloping": 0,
         "Flat": 1,
@@ -85,7 +83,6 @@ with col2:
 
     num_major_vessels = st.selectbox("Number of Major Vessels", [0, 1, 2, 3])
 
-    # Thalassemia
     thal_dict = {
         "Normal": 0,
         "Fixed Defect": 1,
@@ -101,6 +98,10 @@ with col2:
 # ============================================
 
 if st.button("🔍 Predict"):
+
+    # Input validation
+    if cholesterol < 120 or cholesterol > 400:
+        st.warning("⚠️ Please check cholesterol value")
 
     input_data = np.array([[ 
         age,
@@ -122,6 +123,7 @@ if st.button("🔍 Predict"):
     input_dict = dict(zip(columns, input_data[0]))
     input_array = np.array([list(input_dict.values())])
 
+    # Prediction
     prediction = model.predict(input_array)
     probability = model.predict_proba(input_array)
 
@@ -129,13 +131,15 @@ if st.button("🔍 Predict"):
     st.subheader("🩺 Prediction Result")
 
     # ============================================
-    # RESULT
+    # RESULT DISPLAY
     # ============================================
 
     if prediction[0] == 1:
         st.error(f"⚠️ High Risk of Heart Disease ({probability[0][1]*100:.2f}%)")
+        st.warning("Consult a doctor for further evaluation")
     else:
         st.success(f"✅ Low Risk of Heart Disease ({probability[0][0]*100:.2f}%)")
+        st.info("Maintain a healthy lifestyle and regular checkups")
 
     # ============================================
     # PROBABILITY
@@ -146,7 +150,7 @@ if st.button("🔍 Predict"):
     st.write(f"No Disease: {probability[0][0]*100:.2f}%")
 
     # ============================================
-    # CONFIDENCE BAR
+    # CONFIDENCE LOGIC
     # ============================================
 
     st.markdown("### 📈 Confidence Level")
@@ -154,22 +158,33 @@ if st.button("🔍 Predict"):
     st.progress(float(confidence))
     st.write(f"Model Confidence: {confidence*100:.2f}%")
 
+    if confidence >= 0.8:
+        st.success("🟢 High confidence prediction")
+    elif confidence >= 0.6:
+        st.warning("🟡 Moderate confidence - monitor condition")
+    else:
+        st.error("🔴 Low confidence - prediction uncertain")
+
+    # Borderline case detection
+    if 0.4 < probability[0][1] < 0.6:
+        st.warning("⚠️ Borderline case – prediction is not very strong")
+
     # ============================================
-    # EXPLANATION
+    # EXPLANATION (IMPROVED)
     # ============================================
 
     st.markdown("### 🧠 Explanation")
 
     risk_factors = []
 
-    if age > 50:
+    if age >= 50:
         risk_factors.append("Higher age")
 
-    if cholesterol > 240:
-        risk_factors.append("High cholesterol")
+    if cholesterol >= 200:
+        risk_factors.append("Borderline or high cholesterol")
 
-    if resting_blood_pressure > 140:
-        risk_factors.append("High blood pressure")
+    if resting_blood_pressure >= 130:
+        risk_factors.append("Elevated blood pressure")
 
     if max_heart_rate < 100:
         risk_factors.append("Low heart rate")
@@ -177,15 +192,15 @@ if st.button("🔍 Predict"):
     if exercise_induced_angina == 1:
         risk_factors.append("Exercise-induced angina")
 
-    if st_depression > 2:
-        risk_factors.append("High ST depression")
+    if st_depression >= 1:
+        risk_factors.append("Abnormal ST depression")
 
     if len(risk_factors) > 0:
-        st.write("⚠️ Possible contributing factors:")
+        st.write("⚠️ Key contributing factors based on your inputs:")
         for factor in risk_factors:
             st.write(f"- {factor}")
     else:
-        st.write("✅ No major risk factors detected")
+        st.success("✅ No significant risk factors detected")
 
     # ============================================
     # DISCLAIMER
